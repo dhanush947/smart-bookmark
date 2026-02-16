@@ -91,7 +91,7 @@ return (
 
 <div className="min-h-screen bg-gray-100 flex justify-center items-center">
 
-<div className="bg-white shadow-lg rounded-lg p-6 w-full max-w-lg">
+<div className="bg-black shadow-lg rounded-lg p-6 w-full max-w-lg">
 
 <div className="flex justify-between items-center mb-4">
 
