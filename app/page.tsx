@@ -1,30 +1,8 @@
 'use client'
 
 import { supabase } from '@/lib/supabase'
-import { useRouter } from 'next/navigation'
-import { useEffect } from 'react'
 
 export default function Home() {
-
-const router = useRouter()
-
-useEffect(() => {
-
-checkUser()
-
-}, [])
-
-const checkUser = async () => {
-
-const { data } = await supabase.auth.getUser()
-
-if (data.user) {
-
-router.push('/dashboard')
-
-}
-
-}
 
 const login = async () => {
 
@@ -44,16 +22,24 @@ redirectTo: `${window.location.origin}/dashboard`
 
 return (
 
-<div className="flex justify-center items-center h-screen">
+<div className="min-h-screen flex justify-center items-center bg-gradient-to-br from-gray-950 via-gray-900 to-black">
+
+<div className="bg-white/5 backdrop-blur-lg border border-white/10 p-8 rounded-xl shadow-lg text-center">
+
+<h1 className="text-2xl font-semibold text-white mb-6">
+Smart Bookmark
+</h1>
 
 <button
 onClick={login}
-className="bg-black text-white px-6 py-3 rounded"
+className="bg-white text-black px-6 py-3 rounded-lg font-medium hover:bg-gray-200 transition"
 >
 
 Login with Google
 
 </button>
+
+</div>
 
 </div>
 

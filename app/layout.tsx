@@ -1,18 +1,26 @@
 import './globals.css'
-
-export const metadata = {
-  title: 'Smart Bookmark App',
-  description: 'Private real-time bookmark manager'
-}
+import { Toaster } from 'react-hot-toast'
 
 export default function RootLayout({
-  children,
+children,
 }: {
-  children: React.ReactNode
+children: React.ReactNode
 }) {
-  return (
-    <html lang="en">
-      <body className="bg-gray-100">{children}</body>
-    </html>
-  )
+
+return (
+
+<html lang="en">
+
+<body>
+
+{children}
+
+<Toaster position="top-right" />
+
+</body>
+
+</html>
+
+)
+
 }

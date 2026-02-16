@@ -1,4 +1,3 @@
-
 'use client'
 
 export const dynamic = 'force-dynamic'
@@ -7,167 +6,406 @@ import { supabase } from '@/lib/supabase'
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 
+import toast from 'react-hot-toast'
+import Loader from '@/components/Loader'
+
+import { motion } from 'framer-motion'
+
+import { FiEdit, FiTrash } from 'react-icons/fi'
+
+
 export default function Dashboard() {
+
 
 const router = useRouter()
 
 const [user, setUser] = useState<any>(null)
+
 const [bookmarks, setBookmarks] = useState<any[]>([])
+
+const [loading, setLoading] = useState(false)
+
 const [title, setTitle] = useState('')
+
 const [url, setUrl] = useState('')
 
-useEffect(() => {
+const [search, setSearch] = useState('')
+
+const [editId, setEditId] = useState<string | null>(null)
+
+
+useEffect(()=>{
+
 getUser()
 fetchBookmarks()
-}, [])
 
-const getUser = async () => {
+},[])
+
+
+
+const getUser = async()=>{
+
 const { data } = await supabase.auth.getUser()
-if (!data.user) router.push('/')
+
+if(!data.user) router.push('/')
+
 else setUser(data.user)
+
 }
 
-const fetchBookmarks = async () => {
+
+
+const fetchBookmarks = async()=>{
+
+setLoading(true)
+
 const { data } = await supabase
-.from('bookmarks')
-.select('*')
-.order('created_at', { ascending: false })
 
-if (data) setBookmarks(data)
+.from('bookmarks')
+
+.select('*')
+
+.order('created_at',{ascending:false})
+
+setBookmarks(data || [])
+
+setLoading(false)
+
 }
 
-const addBookmark = async () => {
 
-if (!title || !url) return
+
+const addBookmark = async()=>{
+
+if(!title || !url){
+
+toast.error("Enter title and URL")
+
+return
+
+}
+
+
 
 await supabase.from('bookmarks').insert([
+
 {
+
 title,
+
 url,
-user_id: user.id
+
+user_id:user.id
+
 }
+
 ])
+
+
+
+toast.success("Bookmark added")
 
 setTitle('')
 setUrl('')
+
 fetchBookmarks()
 
 }
 
-const deleteBookmark = async (id:string) => {
+
+
+const deleteBookmark = async(id:string)=>{
 
 await supabase
+
 .from('bookmarks')
+
 .delete()
-.eq('id', id)
+
+.eq('id',id)
+
+toast.success("Deleted")
 
 fetchBookmarks()
 
 }
 
-useEffect(() => {
 
-const channel = supabase
-.channel('bookmarks')
-.on(
-'postgres_changes',
-{ event: '*', schema: 'public', table: 'bookmarks' },
-() => fetchBookmarks()
-)
-.subscribe()
 
-return () => {
-supabase.removeChannel(channel)
+const startEdit = (bookmark:any)=>{
+
+setEditId(bookmark.id)
+
+setTitle(bookmark.title)
+
+setUrl(bookmark.url)
+
 }
 
-}, [])
 
-const logout = async () => {
+
+const updateBookmark = async()=>{
+
+await supabase
+
+.from('bookmarks')
+
+.update({title,url})
+
+.eq('id',editId)
+
+
+
+toast.success("Updated")
+
+setEditId(null)
+
+setTitle('')
+setUrl('')
+
+fetchBookmarks()
+
+}
+
+
+
+const logout = async()=>{
+
 await supabase.auth.signOut()
+
 router.push('/')
+
 }
 
-return (
 
-<div className="min-h-screen bg-gray-100 flex justify-center items-center">
 
-<div className="bg-black shadow-lg rounded-lg p-6 w-full max-w-lg">
+const filtered = bookmarks.filter(b=>
 
-<div className="flex justify-between items-center mb-4">
+title.toLowerCase().includes(search.toLowerCase())
 
-<h1 className="text-2xl font-bold text-gray-800">
-Smart Bookmarks
+)
+
+
+
+return(
+
+
+
+<div className="min-h-screen bg-gradient-to-br from-gray-950 via-gray-900 to-black text-white">
+
+
+{/* Navbar */}
+
+
+
+<div className="flex justify-between p-6 border-b border-gray-800">
+
+<h1 className="text-xl font-semibold">
+
+Smart Bookmark
+
 </h1>
 
+
 <button
+
 onClick={logout}
-className="text-red-500 hover:text-red-700 font-medium"
+
+className="text-red-400"
+
 >
+
 Logout
+
 </button>
 
 </div>
 
-<input
-placeholder="Bookmark Title"
-value={title}
-onChange={(e)=>setTitle(e.target.value)}
-className="border p-2 w-full mb-2 rounded"
-/>
+
+
+<div className="max-w-2xl mx-auto mt-10 px-4">
+
+
+
+{/* Search */}
+
+
 
 <input
-placeholder="Bookmark URL"
-value={url}
-onChange={(e)=>setUrl(e.target.value)}
-className="border p-2 w-full mb-3 rounded"
+
+placeholder="Search..."
+
+value={search}
+
+onChange={(e)=>setSearch(e.target.value)}
+
+className="w-full p-3 mb-4 bg-black/40 border border-gray-700 rounded"
+
 />
+
+
+
+{/* Add / Edit */}
+
+
+
+<div className="bg-white/5 p-4 rounded-xl mb-6">
+
+<input
+
+placeholder="Title"
+
+value={title}
+
+onChange={(e)=>setTitle(e.target.value)}
+
+className="w-full p-2 mb-2 bg-black border border-gray-700 rounded"
+
+/>
+
+
+<input
+
+placeholder="URL"
+
+value={url}
+
+onChange={(e)=>setUrl(e.target.value)}
+
+className="w-full p-2 mb-3 bg-black border border-gray-700 rounded"
+
+/>
+
+
 
 <button
-onClick={addBookmark}
-className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded w-full"
+
+onClick={editId ? updateBookmark : addBookmark}
+
+className="bg-blue-600 px-4 py-2 rounded"
+
 >
-Add Bookmark
+
+
+{editId ? "Update" : "Add"}
+
 </button>
 
-<div className="mt-6">
 
-{bookmarks.length === 0 && (
 
-<p className="text-gray-500 text-center">
-No bookmarks yet
-</p>
+</div>
 
-)}
 
-{bookmarks.map(bookmark=>(
 
-<div
+{/* Loader */}
+
+
+
+{loading && <Loader/>}
+
+
+
+{/* List */}
+
+
+
+{filtered.map(bookmark=>(
+
+
+
+<motion.div
+
 key={bookmark.id}
-className="flex justify-between items-center border p-3 rounded mb-2 hover:bg-gray-50"
+
+initial={{opacity:0,y:10}}
+
+animate={{opacity:1,y:0}}
+
+className="bg-white/5 p-4 mb-3 rounded flex justify-between items-center"
+
 >
+
+
+
+<div>
+
+
 
 <a
+
 href={bookmark.url}
+
 target="_blank"
-className="text-blue-600 hover:underline"
+
+className="text-blue-400"
+
 >
+
+
+
 {bookmark.title}
+
 </a>
 
-<button
-onClick={()=>deleteBookmark(bookmark.id)}
-className="text-red-500 hover:text-red-700"
->
-Delete
-</button>
+
+
+<img
+
+src={`https://www.google.com/s2/favicons?domain=${bookmark.url}`}
+
+className="inline ml-2"
+
+/>
+
+
 
 </div>
+
+
+
+<div className="flex gap-3">
+
+
+
+<button
+
+onClick={()=>startEdit(bookmark)}
+
+>
+
+<FiEdit/>
+
+</button>
+
+
+
+<button
+
+onClick={()=>deleteBookmark(bookmark.id)}
+
+>
+
+<FiTrash/>
+
+</button>
+
+
+
+</div>
+
+
+
+</motion.div>
+
+
 
 ))}
 
-</div>
+
 
 </div>
+
+
 
 </div>
 
